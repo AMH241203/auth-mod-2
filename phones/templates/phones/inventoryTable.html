@@ -1,0 +1,37 @@
+{% if inventory_list %}
+<div class="main">
+    <table border="1">  <!-- Added a border for visibility -->
+        <thead>
+            <tr>
+                <th>Brand Name</th>
+                <th>Model</th>
+                <th>Build Date</th>
+                <th>Color</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inventory in inventory_list %}
+            <tr>
+                <td>{{ inventory.phone.brand_name }}</td>
+                <td>{{ inventory.phone.model }}</td>
+                <td>{{ inventory.phone.build_date }}</td>
+                <td>{{inventory.color}}</td>
+                <td>{{ inventory.phone.price }}</td>
+                <td>{{ inventory.quantity }}</td>
+                <td>{{ inventory.phone.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <p>No data available.</p>
+{% endif %}
+
+<form action="{% url 'logout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit">Log Out</button>
+</form>

@@ -37,6 +37,7 @@ resource "aws_db_instance" "mydb" {
   skip_final_snapshot  = true
   identifier = "my-database"
   vpc_security_group_ids = ["sg-043274166b565e17a"]
+  deletion_protection  = false
   tags = {
     Name = "My database"
   }
@@ -88,7 +89,7 @@ resource "aws_alb_target_group_attachment" "targets" {
     for k, v in aws_instance.my-server:
     k => v
   }
-  target_group_arn = aws_lb.my-lb.arn
+  target_group_arn = aws_lb_target_group.my-lb-tg.arn
   target_id = each.value.id
   
 }

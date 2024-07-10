@@ -17,6 +17,7 @@ resource "aws_instance" "my-server" {
               sudo systemctl start docker
               sudo chown ec2-user /var/run/docker.sock
               sudo yum install postgresql16 -y
+              sudo yum install ansible -y
               git clone https://github.com/AMH241203/auth-mod-2
               sudo curl -L https://github.com/docker/compose/releases/download/v2.28.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose

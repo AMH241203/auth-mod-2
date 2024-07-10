@@ -17,6 +17,11 @@ resource "aws_instance" "my-server" {
               sudo systemctl start docker
               sudo chown ec2-user /var/run/docker.sock
               sudo yum install postgresql16 -y
+              git clone https://github.com/AMH241203/auth-mod-2
+              sudo curl -L https://github.com/docker/compose/releases/download/v2.28.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              cd auth-mod-2/
+              docker-compose up --build
               EOF
 }
 
@@ -69,11 +74,21 @@ resource "aws_lb_target_group" "my-lb-tg" {
 
 resource "aws_lb_listener" "alb_http_listener" {
   load_balancer_arn = aws_lb.my-lb.arn
-  port = 8000
+  port = 80
   protocol = "HTTP"
 
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.my-lb-tg.arn
   }
+}
+
+resource "aws_alb_target_group_attachment" "targets" {
+  for_each = {
+    for k, v in aws_instance.my-server:
+    k => v
+  }
+  target_group_arn = aws_lb.my-lb.arn
+  target_id = each.value.id
+  
 }

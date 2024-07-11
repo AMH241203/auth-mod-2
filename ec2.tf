@@ -1,10 +1,74 @@
+resource "aws_security_group" "bastion-sg" {
+  name        = "bastion-sg"
+  description = "Allow SSH inbound traffic"
+  vpc_id = "vpc-05a2e61172e49ce58"
+  
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+}
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "private-ec2-sg" {
+  name        = "private-ec2-sg"
+  description = "Allow Traffic from bastion host and ALB"
+  vpc_id = "vpc-05a2e61172e49ce58"
+
+  ingress {
+     from_port = 22
+     to_port = 22
+     protocol = "tcp"
+     security_groups = [aws_security_group.bastion-sg.id]
+  }
+  ingress {
+    from_port = 8000
+    to_port = 8000
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    security_groups = ["sg-043b64969f27d11d9"]
+  }
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "bastion-host" {
+  ami           = "ami-04629cfb3bd2d73f3"
+  instance_type = "t2.micro"
+  subnet_id = "subnet-0f80d4010443c2586"
+  key_name = "new-key"
+  vpc_security_group_ids = [aws_security_group.bastion-sg.id]
+  tags = {
+    Name = "Bastion Host"
+  }
+}
+
 resource "aws_instance" "my-server" {
   ami           = "ami-04629cfb3bd2d73f3"
   instance_type = "t2.micro"
+  associate_public_ip_address = false
+  subnet_id = "subnet-0342ffdc3e6ec296d"
   count = 2
   key_name = "new-key"
 
-  vpc_security_group_ids = ["sg-0ee09a1e4a2ce8f60"]
+  vpc_security_group_ids = [aws_security_group.private-ec2-sg.id]
   tags = {
     Name = "My server ${count.index + 1}"
   }
@@ -17,6 +81,7 @@ resource "aws_instance" "my-server" {
               sudo systemctl start docker
               sudo chown ec2-user /var/run/docker.sock
               sudo yum install postgresql16 -y
+              sudo amazon-linux-extras install epel -y
               sudo yum install ansible -y
               git clone https://github.com/AMH241203/auth-mod-2
               sudo curl -L https://github.com/docker/compose/releases/download/v2.28.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose

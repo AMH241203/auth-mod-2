@@ -49,6 +49,33 @@ resource "aws_security_group" "private-ec2-sg" {
   }
 }
 
+resource "aws_security_group" "rds-sg" {
+  name        = "rds-sg"
+  description = "Allow Traffic from EC2 instances"
+  vpc_id = "vpc-05a2e61172e49ce58"
+
+  ingress {
+    from_port = 5432
+    to_port = 5432
+    protocol = "tcp"
+    security_groups = [aws_security_group.private-ec2-sg.id]
+  }
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_eip" "nat-eip" {
+  
+}
+
+resource "aws_nat_gateway" "nat-gw" {
+  allocation_id = "aws_eip.nat-eip.id"
+  subnet_id = "subnet-0f80d4010443c2586" 
+}
 resource "aws_instance" "bastion-host" {
   ami           = "ami-04629cfb3bd2d73f3"
   instance_type = "t2.micro"
@@ -90,11 +117,14 @@ resource "aws_instance" "my-server" {
               sudo yum install postgresql16 -y
               sudo amazon-linux-extras install epel -y
               sudo yum install ansible -y
+              sudo yum install proxychains -y
+              echo "socks5  127.0.0.1 1080" | sudo tee -a /etc/proxychains.conf
+              ssh -i /path/to/private-key.pem -D 1080 -q -C -N ec2-user@<Bastion_Host_Private_IP> &
               git clone https://github.com/AMH241203/auth-mod-2
               sudo curl -L https://github.com/docker/compose/releases/download/v2.28.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
               sudo chmod +x /usr/local/bin/docker-compose
               cd auth-mod-2/
-              docker-compose up --build
+              proxychains docker-compose up --build
               EOF
 }
 
@@ -109,7 +139,7 @@ resource "aws_db_instance" "mydb" {
   parameter_group_name = "postgres16"
   skip_final_snapshot  = true
   identifier = "my-database"
-  vpc_security_group_ids = ["sg-043274166b565e17a"]
+  vpc_security_group_ids = [aws_security_group.rds-sg.id]
   deletion_protection  = false
   tags = {
     Name = "My database"

@@ -89,6 +89,7 @@ resource "aws_instance" "bastion-host" {
               #!/bin/bash
               sudo yum update -y
               sudo yum install git -y
+              sudo amazon-linux-extras install ansible2 -y
               git clone https://github.com/AMH241203/auth-mod-2
               EOF
 
